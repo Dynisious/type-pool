@@ -1,0 +1,8 @@
+[package]
+name = "type-pool"
+version = "0.1.0"
+authors = ["Dynisious <daniel.bechaz@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+subvert = { version = "0.2.1", git = "https://github.com/Dynisious/subvert" }
