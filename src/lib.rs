@@ -15,7 +15,8 @@
 //! assert_eq!(pool[key2], 1);
 //! assert_eq!(pool[key3], 10);
 //! 
-//! let (keys, values) = pool.get_set([key1, key2, key3].iter().cloned().collect());
+//! let keys = [key1, key2, key3].iter().cloned().collect();
+//! let values = pool.get_set(&keys);
 //! ```
 //! 
 //! Author --- daniel.bechaz@gmail.com  
@@ -136,18 +137,14 @@ impl<T,> TypePool<T,> {
   /// let key1 = pool.insert(10,);
   /// let key2 = pool.insert(1,);
   /// 
-  /// let (keys, values) = pool.get_set([key1, key2].iter().cloned().collect());
+  /// let keys = [key1, key2].iter().cloned().collect();
+  /// let values = pool.get_set(&keys);
   /// ```
-  pub fn get_set(&mut self, keys: HashSet<PoolKey<T,>>,) -> (Box<[PoolKey<T,>]>, Box<[&mut T]>,) {
-    let values = keys.iter()
-      .cloned()
-      .map(|key,| unsafe { steal!(&mut self[key]) },)
-      .collect();
-    let keys = keys.iter()
-      .cloned()
-      .collect();
-    
-    (keys, values,)
+  pub fn get_set(&mut self, keys: &HashSet<PoolKey<T,>>,) -> Box<[&mut T]> {
+    keys.iter()
+    .cloned()
+    .map(|key,| unsafe { steal!(&mut self[key]) },)
+    .collect()
   }
 }
 
