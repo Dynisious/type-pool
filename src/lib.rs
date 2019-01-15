@@ -74,7 +74,7 @@ impl<T,> TypePool<T,> {
       next_id: 0,
     }
   }
-  /// Returns `true` if `key` is owned by this TypePool.
+  /// Returns `true` if `key` was issued by this TypePool.
   #[inline]
   pub fn owns_key(&self, key: &PoolKey<T,>,) -> bool {
     key.1.get() == self as *const Self as usize
@@ -115,6 +115,20 @@ impl<T,> TypePool<T,> {
     self.pool.insert(id, value,);
 
     PoolKey(id, unsafe { NonZeroUsize::new_unchecked(&mut self.pool as *const _ as usize,) }, PhantomData,)
+  }
+  /// Removes the value mapped too [PoolKey].
+  /// 
+  /// # Params
+  /// 
+  /// key --- The key of the value to remove.  
+  /// 
+  /// # Panics
+  /// 
+  /// If `key` is not owned by this pool.
+  pub fn remove(&mut self, key: PoolKey<T,>,) -> Option<T> {
+    assert!(self.owns_key(&key,), "`PoolKey::delete` `key` must be owned by this pool",);
+
+    self.pool.remove(&key.0,)
   }
   /// Returns unique references too all the values referenced by `keys`.
   /// 
@@ -193,5 +207,33 @@ impl<T,> ops::IndexMut<PoolKey<T,>> for TypePool<T,> {
     assert!(self.owns_key(&key,), "`TypePool::index_mut` `key` must be issued from the pool",);
 
     self.pool.get_mut(&key.0,).expect("`TypePool::index_mut` `key` does not exist",)
+  }
+}
+
+#[cfg(test,)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_type_pool() {
+    let mut pool = TypePool::new();
+    let key1 = pool.insert(4,);
+    let key2 = pool.insert(2,);
+    let key3 = pool.insert(3,);
+    
+    let values = pool.get_set(&[key1, key2, key3,].iter().cloned().collect(),);
+    assert_eq!(values.len(), 3, "`TypePool::get_set` returned wrong length",);
+
+    assert_eq!(4, pool[key1], "`TypePool::index` failed",);
+
+    pool[key1] = 1;
+    assert_eq!(1, pool[key1], "`TypePool::index_mut` failed",);
+    
+    let value = **pool.get_set(&[key1,].iter().cloned().collect(),).iter().next()
+      .expect("`TypePool::get_set` returned empty list",);
+    assert_eq!(value, 1, "`TypePool::get_set` returned wrong value",);
+    
+    let value = pool.remove(key1,).expect("`TypePool::remove` returned no value");
+    assert_eq!(value, 1, "`TypePool::remove` returned wrong value",);
   }
 }
